@@ -1,0 +1,322 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HabboGPTer.ViewModels"
+        xmlns:services="using:HabboGPTer.Services"
+        x:Class="HabboGPTer.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        x:Name="MainWindowRoot"
+        Title="HabboGPTer - AI Chat Roleplay"
+        Width="1000"
+        Height="800"
+        MinWidth="900"
+        MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#1e1e1e">
+
+    <Window.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="#ffffff"/>
+        </Style>
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="#2d2d2d"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+        </Style>
+        <Style Selector="Border.header">
+            <Setter Property="Background" Value="#363636"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="ListBox">
+            <Setter Property="Background" Value="#252525"/>
+            <Setter Property="BorderBrush" Value="#3d3d3d"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#252525"/>
+            <Setter Property="BorderBrush" Value="#3d3d3d"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Foreground" Value="#ffffff"/>
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="Background" Value="#0078d4"/>
+            <Setter Property="Foreground" Value="#ffffff"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="12,6"/>
+        </Style>
+        <Style Selector="Button.secondary">
+            <Setter Property="Background" Value="#3d3d3d"/>
+        </Style>
+        <Style Selector="Button.danger">
+            <Setter Property="Background" Value="#d13438"/>
+        </Style>
+        <Style Selector="Button.success">
+            <Setter Property="Background" Value="#107c10"/>
+        </Style>
+        <Style Selector="Button.small">
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="Foreground" Value="#ffffff"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Classes="card" Margin="0,0,0,12">
+            <Grid RowDefinitions="Auto,Auto,Auto">
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+                    <TextBlock Text="G-Earth Instances" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    <TextBlock VerticalAlignment="Center" Foreground="#888888">
+                        <Run Text="("/>
+                        <Run Text="{Binding ConnectedCount}"/>
+                        <Run Text="/"/>
+                        <Run Text="{Binding InstanceCount}"/>
+                        <Run Text=" connected)"/>
+                    </TextBlock>
+
+                    <Border Width="1" Background="#3d3d3d" Margin="8,0"/>
+
+                    <CheckBox Content="Auto-detect" IsChecked="{Binding AutoDetectEnabled}" VerticalAlignment="Center"/>
+                    <CheckBox Content="Auto-connect" IsChecked="{Binding AutoConnectEnabled}" VerticalAlignment="Center"/>
+
+                    <Button Content="Scan Now"
+                            Command="{Binding ScanNowCommand}"
+                            Classes="secondary small"
+                            IsEnabled="{Binding !IsScanning}"/>
+                </StackPanel>
+
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding Instances}"
+                         SelectedItem="{Binding SelectedInstance}"
+                         Height="70"
+                         Margin="0,0,0,8">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:BotInstanceViewModel">
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+                                <Border Grid.Column="0"
+                                        Background="#363636"
+                                        CornerRadius="4"
+                                        Padding="6,2"
+                                        Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding Port, StringFormat='Port {0}'}"
+                                               FontWeight="SemiBold"
+                                               FontSize="12"/>
+                                </Border>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding Username}"
+                                           Foreground="#4cd964"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding Status}"
+                                           Foreground="{Binding StatusColor}"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Margin="0,0,8,0"/>
+                                <CheckBox Grid.Column="3"
+                                          Content="AI"
+                                          IsChecked="{Binding IsEnabled}"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,8,0"/>
+                                <Button Grid.Column="4"
+                                        Content="X"
+                                        Classes="danger small"
+                                        Width="24" Height="24"
+                                        Padding="0"
+                                        Command="{ReflectionBinding #MainWindowRoot.DataContext.DisconnectPortCommand}"
+                                        CommandParameter="{Binding Port}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Available:" VerticalAlignment="Center" Foreground="#888888" FontSize="12"/>
+                    <ItemsControl ItemsSource="{Binding AvailablePorts}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="4"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="services:GEarthScanResult">
+                                <Button Content="{Binding Port, StringFormat='Connect {0}'}"
+                                        Command="{ReflectionBinding #MainWindowRoot.DataContext.ConnectToPortCommand}"
+                                        CommandParameter="{Binding Port}"
+                                        Classes="success small"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="(none found)"
+                               Foreground="#666666"
+                               FontSize="11"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding !AvailablePorts.Count}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Classes="card">
+                <Grid RowDefinitions="Auto,*">
+                    <Border Grid.Row="0" Classes="header">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="AI SETTINGS"
+                                       FontWeight="Bold"
+                                       Foreground="#5ac8fa"/>
+                            <TextBlock Text="[shared]" Foreground="#666666" FontSize="10" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="12">
+                            <CheckBox IsChecked="{Binding AIEnabled}"
+                                      Content="AI Chat Enabled"
+                                      FontWeight="SemiBold"/>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="OpenRouter API Key:" FontSize="12" Foreground="#888888"/>
+                                <TextBox Text="{Binding ApiKey}"
+                                         PasswordChar="*"
+                                         Watermark="sk-or-..."/>
+                            </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Response Delay (seconds):" FontSize="12" Foreground="#888888"/>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Min:" VerticalAlignment="Center" FontSize="12"/>
+                                    <TextBox Width="50" Text="{Binding MinResponseDelay}"/>
+                                    <TextBlock Text="Max:" VerticalAlignment="Center" FontSize="12"/>
+                                    <TextBox Width="50" Text="{Binding MaxResponseDelay}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Border Background="#1a1a2e" CornerRadius="4" Padding="8" Margin="0,8,0,0">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Info" FontWeight="SemiBold" Foreground="#5ac8fa" FontSize="11"/>
+                                    <TextBlock Text="Get your API key from openrouter.ai"
+                                               Foreground="#888888"
+                                               FontSize="10"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="Model: openai/gpt-oss-120b:free"
+                                               Foreground="#888888"
+                                               FontSize="10"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="Character name from your Habbo username"
+                                               Foreground="#888888"
+                                               FontSize="10"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Column="2" RowDefinitions="*,12,Auto">
+                <Border Grid.Row="0" Classes="card">
+                    <Grid RowDefinitions="Auto,*,Auto">
+                        <Border Grid.Row="0" Classes="header">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="CHAT MESSAGES" FontWeight="Bold" Foreground="#5ac8fa"/>
+                                <TextBlock Text="{Binding SelectedInstance.Username, StringFormat='({0})', FallbackValue=''}"
+                                           Foreground="#4cd964"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"/>
+                                <Button Content="Clear"
+                                        Command="{Binding ClearChatCommand}"
+                                        Classes="secondary small"
+                                        HorizontalAlignment="Right"
+                                        Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <ScrollViewer Grid.Row="1" x:Name="ChatScrollViewer">
+                            <ItemsControl ItemsSource="{Binding CurrentChatMessages}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ChatMessageViewModel">
+                                        <TextBlock Text="{Binding Text}"
+                                                   Foreground="{Binding Color}"
+                                                   FontFamily="Consolas"
+                                                   FontSize="12"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,2"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                            <TextBox Grid.Column="0"
+                                     x:Name="ChatInputBox"
+                                     Watermark="Type a message..."
+                                     Margin="0,0,8,0"/>
+                            <Button Grid.Column="1"
+                                    Content="Send"
+                                    Classes="success"
+                                    Click="OnSendChatClick"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="2" Classes="card" Height="180">
+                    <Grid RowDefinitions="Auto,*">
+                        <Border Grid.Row="0" Classes="header">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="LOG OUTPUT" FontWeight="Bold"/>
+                                <Button Content="Clear"
+                                        Command="{Binding ClearLogCommand}"
+                                        Classes="secondary small"
+                                        HorizontalAlignment="Right"
+                                        Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <ScrollViewer Grid.Row="1" x:Name="LogScrollViewer">
+                            <ItemsControl ItemsSource="{Binding CurrentLogEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LogEntryViewModel">
+                                        <TextBlock Text="{Binding Text}"
+                                                   Foreground="{Binding Color}"
+                                                   FontFamily="Consolas"
+                                                   FontSize="11"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <Border Grid.Row="2" Classes="card" Margin="0,12,0,0" Padding="8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="Selected:" Foreground="#888888" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding SelectedInstance.DisplayText, FallbackValue='None'}"
+                               Foreground="#4cd964"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12">
+                    <TextBlock Text="Status:" Foreground="#888888" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding CurrentStatusText}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

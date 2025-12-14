@@ -1,0 +1,19 @@
+{
+  "title": "HabboGPTer",
+  "description": "AI-powered chat roleplay bot for Habbo using OpenRouter",
+  "version": "1.0.0",
+  "author": "HabboGPTer",
+  "commands": {
+    "default": {
+      "win": {
+        "command": ["HabboGPTer.exe"]
+      },
+      "linux": {
+        "command": ["./HabboGPTer"]
+      },
+      "mac": {
+        "command": ["./HabboGPTer"]
+      }
+    }
+  }
+}
