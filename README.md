@@ -6,6 +6,9 @@ AI-powered chat roleplay bot for Habbo Hotel using OpenRouter API and G-Earth ex
 
 HabboGPTer is a G-Earth extension that enables AI-powered roleplay conversations in Habbo Hotel. It uses OpenRouter API to generate natural, contextual responses based on room chat conversations. The bot automatically detects your Habbo username and uses it as the character name, responding naturally to conversations with a 30% random chance or when directly mentioned.
 
+<img width="992" height="823" alt="image" src="https://github.com/user-attachments/assets/66c05f82-f0d4-4f83-9222-46220e9bfbc0" />
+
+
 ## Features
 
 - 🤖 **AI-Powered Chat**: Uses OpenRouter API with free models for natural conversation
